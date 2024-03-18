@@ -211,10 +211,6 @@ caffevis_layers_aspect_ratio = locals().get('caffevis_layers_aspect_ratio', 1.0)
 # Replace magic '%DVT_ROOT%' string with the root DeepVis Toolbox
 # directory (the location of this settings file)
 dvt_root = os.path.dirname(os.path.abspath(__file__))
-if 'caffevis_deploy_prototxt' in locals():
-    caffevis_deploy_prototxt = caffevis_deploy_prototxt.replace('%DVT_ROOT%', dvt_root)
-if 'caffevis_network_weights' in locals():
-    caffevis_network_weights = caffevis_network_weights.replace('%DVT_ROOT%', dvt_root)
 if isinstance(caffevis_data_mean, str):
     caffevis_data_mean = caffevis_data_mean.replace('%DVT_ROOT%', dvt_root)
 if isinstance(caffevis_labels, str):
@@ -320,11 +316,11 @@ def assert_in_settings(setting_name):
     if not setting_name in bound_locals:
         raise Exception('The "%s" setting is required; be sure to define it in settings_local.py' % setting_name)
 
-assert_in_settings('caffevis_caffe_root')
-assert_in_settings('caffevis_deploy_prototxt')
-assert_in_settings('caffevis_network_weights')
-assert_in_settings('caffevis_data_mean')
+#assert_in_settings('caffevis_caffe_root')
+#assert_in_settings('caffevis_deploy_prototxt')
+#assert_in_settings('caffevis_network_weights')
+#assert_in_settings('caffevis_data_mean')
 
 # Check that caffe directory actually exists
-if not os.path.exists(caffevis_caffe_root):
-    raise Exception('The Caffe directory specified in settings_local.py, %s, does not exist. Set the caffevis_caffe_root variable in your settings_local.py to the path of your compiled Caffe checkout.' % caffevis_caffe_root)
+#if not os.path.exists(caffevis_caffe_root):
+#    raise Exception('The Caffe directory specified in settings_local.py, %s, does not exist. Set the caffevis_caffe_root variable in your settings_local.py to the path of your compiled Caffe checkout.' % caffevis_caffe_root)

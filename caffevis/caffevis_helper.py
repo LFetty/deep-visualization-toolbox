@@ -1,10 +1,10 @@
 import numpy as np
-
+import torch
 from image_misc import get_tiles_height_width, caffe_load_image
 
 
 
-def net_preproc_forward(settings, net, img, data_hw):
+def net_preproc_forward(settings, net, img, data_hw, mode_gpu):
 
     if settings.static_files_input_mode == "siamese_image_list":
         appropriate_shape = data_hw + (6,)
@@ -14,9 +14,10 @@ def net_preproc_forward(settings, net, img, data_hw):
     assert img.shape == appropriate_shape, 'img is wrong size (got %s but expected %s)' % (img.shape, appropriate_shape)
     #resized = caffe.io.resize_image(img, net.image_dims)   # e.g. (227, 227, 3)
 
-    data_blob = net.transformer.preprocess('data', img)                # e.g. (3, 227, 227), mean subtracted and scaled to [0,255]
-    data_blob = data_blob[np.newaxis,:,:,:]                   # e.g. (1, 3, 227, 227)
-    output = net.forward(data=data_blob)
+    data_blob = ((img/255 - np.array([0.485, 0.456, 0.406]))/np.array([0.229, 0.224, 0.225])).transpose(2,0,1)#net.transformer.preprocess('data', img)                # e.g. (3, 227, 227), mean subtracted and scaled to [0,255]
+    data_blob = torch.tensor(data_blob[np.newaxis,:,:,:], device=mode_gpu, dtype=torch.float32, requires_grad=True)# e.g. (1, 3, 227, 227)
+    net.data = data_blob
+    output = net(data_blob)
     return output
 
 
@@ -34,7 +35,7 @@ def get_pretty_layer_name(settings, layer_name):
     if hasattr(settings, 'caffevis_layer_pretty_name_fn'):
         ret = settings.caffevis_layer_pretty_name_fn(ret)
     if ret != layer_name:
-        print '  Prettified layer name: "%s" -> "%s"' % (layer_name, ret)
+        print('  Prettified layer name: "%s" -> "%s"' % (layer_name, ret))
     return ret
 
 
@@ -82,7 +83,7 @@ def load_sprite_image(img_path, rows_cols, n_sprites = None):
     sprite_channels = img.shape[2]
 
     ret = np.zeros((n_sprites, sprite_height, sprite_width, sprite_channels), dtype = img.dtype)
-    for idx in xrange(n_sprites):
+    for idx in range(n_sprites):
         # Row-major order
         ii = idx / cols
         jj = idx % cols
@@ -114,10 +115,10 @@ def check_force_backward_true(prototxt_file):
                 break
 
     if not found:
-        print '\n\nWARNING: the specified prototxt'
-        print '"%s"' % prototxt_file
-        print 'does not contain the line "force_backward: true". This may result in backprop'
-        print 'and deconv producing all zeros at the input layer. You may want to add this line'
-        print 'to your prototxt file before continuing to force backprop to compute derivatives'
-        print 'at the data layer as well.\n\n'
+        print('\n\nWARNING: the specified prototxt')
+        print('"%s"' % prototxt_file)
+        print('does not contain the line "force_backward: true". This may result in backprop')
+        print('and deconv producing all zeros at the input layer. You may want to add this line')
+        print('to your prototxt file before continuing to force backprop to compute derivatives')
+        print('at the data layer as well.\n\n')
 

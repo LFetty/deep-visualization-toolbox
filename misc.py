@@ -19,7 +19,7 @@ class WithTimer:
         self.__enter__()
     
     def __enter__(self):
-        self.proc = time.clock()
+        self.proc = time.perf_counter()
         self.wall = time.time()
         return self
         

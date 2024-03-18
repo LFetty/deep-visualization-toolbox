@@ -80,11 +80,11 @@ def crop_to_square(frame):
     i_size,j_size = frame.shape[0],frame.shape[1]
     if j_size > i_size:
         # landscape
-        offset = (j_size - i_size) / 2
+        offset = (j_size - i_size) // 2
         return frame[:,offset:offset+i_size,:]
     else:
         # portrait
-        offset = (i_size - j_size) / 2
+        offset = (i_size - j_size) // 2
         return frame[offset:offset+j_size,:,:]
 
 
@@ -144,7 +144,7 @@ def get_tiles_height_width_ratio(n_tiles, width_ratio = 1.0):
         
 
 def tile_images_normalize(data, c01 = False, boost_indiv = 0.0,  boost_gamma = 1.0, single_tile = False, scale_range = 1.0, neg_pos_colors = None):
-    data = data.copy()
+    data = data.detach().cpu().numpy().copy()
     if single_tile:
         # promote 2D image -> 3D batch (01 -> b01) or 3D image -> 4D batch (01c -> b01c OR c01 -> bc01)
         data = data[np.newaxis]

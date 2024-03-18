@@ -4,7 +4,7 @@ import numpy as np
 
 from codependent_thread import CodependentThread
 from misc import WithTimer
-from caffevis_helper import net_preproc_forward
+from .caffevis_helper import net_preproc_forward
 
 
 
@@ -15,7 +15,7 @@ class CaffeProcThread(CodependentThread):
         CodependentThread.__init__(self, heartbeat_required)
         self.daemon = True
         self.net = net
-        self.input_dims = self.net.blobs['data'].data.shape[2:4]    # e.g. (227,227)
+        self.input_dims = (227, 227)#self.net.blobs['data'].data.shape[2:4]    # e.g. (227,227)#TODO: replace with automatic input shape
         self.state = state
         self.last_process_finished_at = None
         self.last_process_elapsed = None
@@ -30,20 +30,14 @@ class CaffeProcThread(CodependentThread):
 
 
     def run(self):
-        print 'CaffeProcThread.run called'
+        print('CaffeProcThread.run called')
         frame = None
 
-        import caffe
+        #import caffe
         # Set the mode to CPU or GPU. Note: in the latest Caffe
         # versions, there is one Caffe object *per thread*, so the
         # mode must be set per thread! Here we set the mode for the
         # CaffeProcThread thread; it is also set in the main thread.
-        if self.mode_gpu:
-            caffe.set_mode_gpu()
-            print 'CaffeVisApp mode (in CaffeProcThread): GPU'
-        else:
-            caffe.set_mode_cpu()
-            print 'CaffeVisApp mode (in CaffeProcThread): CPU'
         
         while not self.is_timed_out():
             with self.state.lock:
@@ -97,29 +91,30 @@ class CaffeProcThread(CodependentThread):
                     im_small = cv2.resize(frame, self.input_dims)
 
                 with WithTimer('CaffeProcThread:forward', quiet = self.debug_level < 1):
-                    net_preproc_forward(self.settings, self.net, im_small, self.input_dims)
+                    net_preproc_forward(self.settings, self.net, im_small, self.input_dims, self.mode_gpu)
 
             if run_back:
-                diffs = self.net.blobs[backprop_layer].diff * 0
-                diffs[0][backprop_unit] = self.net.blobs[backprop_layer].data[0,backprop_unit]
+                diffs = self.net.img_features[backprop_layer].detach() * 0
+                diffs[0][backprop_unit] = self.net.img_features[backprop_layer].detach()[0, backprop_unit]
+                self.net.reset_grad(self.net.parameters())
 
                 assert back_mode in ('grad', 'deconv')
                 if back_mode == 'grad':
                     with WithTimer('CaffeProcThread:backward', quiet = self.debug_level < 1):
                         #print '**** Doing backprop with %s diffs in [%s,%s]' % (backprop_layer, diffs.min(), diffs.max())
                         try:
-                            self.net.backward_from_layer(backprop_layer, diffs, zero_higher = True)
+                            self.net.img_features[backprop_layer].backward(diffs, retain_graph=True)
                         except AttributeError:
-                            print 'ERROR: required bindings (backward_from_layer) not found! Try using the deconv-deep-vis-toolbox branch as described here: https://github.com/yosinski/deep-visualization-toolbox'
+                            print('ERROR: required bindings (backward_from_layer) not found! Try using the deconv-deep-vis-toolbox branch as described here: https://github.com/yosinski/deep-visualization-toolbox')
                             raise
-                else:
-                    with WithTimer('CaffeProcThread:deconv', quiet = self.debug_level < 1):
-                        #print '**** Doing deconv with %s diffs in [%s,%s]' % (backprop_layer, diffs.min(), diffs.max())
-                        try:
-                            self.net.deconv_from_layer(backprop_layer, diffs, zero_higher = True)
-                        except AttributeError:
-                            print 'ERROR: required bindings (deconv_from_layer) not found! Try using the deconv-deep-vis-toolbox branch as described here: https://github.com/yosinski/deep-visualization-toolbox'
-                            raise
+                #else:
+                #    with WithTimer('CaffeProcThread:deconv', quiet = self.debug_level < 1):
+                #        #print '**** Doing deconv with %s diffs in [%s,%s]' % (backprop_layer, diffs.min(), diffs.max())
+                #        try:
+                #            self.net.deconv_from_layer(backprop_layer, diffs, zero_higher = True)
+                #        except AttributeError:
+                #            print('ERROR: required bindings (deconv_from_layer) not found! Try using the deconv-deep-vis-toolbox branch as described here: https://github.com/yosinski/deep-visualization-toolbox')
+                #            raise
 
                 with self.state.lock:
                     self.state.back_stale = False
@@ -135,8 +130,8 @@ class CaffeProcThread(CodependentThread):
             else:
                 time.sleep(self.loop_sleep)
         
-        print 'CaffeProcThread.run: finished'
-        print 'CaffeProcThread.run: processed %d frames fwd, %d frames back' % (self.frames_processed_fwd, self.frames_processed_back)
+        print('CaffeProcThread.run: finished')
+        print('CaffeProcThread.run: processed %d frames fwd, %d frames back' % (self.frames_processed_fwd, self.frames_processed_back))
 
     def approx_fps(self):
         '''Get the approximate frames per second processed by this
