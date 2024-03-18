@@ -1,3 +1,23 @@
+# For original repo README see below
+
+This is the equivalent ported to pytorch. In the folder models\alexnet-torch you find the settings file template which have to copy as described in the original README.
+
+Currently only the gradient backprop algorithm is implemented which can be enabled/disabled by pressing `b` when running the app.
+
+Webcam support is possible via pressing `c`.
+
+Navigation through the layers and features can be done with the `i, j, k ,l` keys.
+
+
+## Requirements
+
+The app is tested with python=3.10.
+
+    $ pip install scikit-image numpy scipy python-opencv
+
+Also make sure to install a GPU enabled pytorch distribution which you can find [here](https://pytorch.org/get-started/locally/).
+
+
 # Deep Visualization Toolbox
 
 This is the code required to run the Deep Visualization Toolbox, as well as to generate the neuron-by-neuron visualizations using regularized optimization.

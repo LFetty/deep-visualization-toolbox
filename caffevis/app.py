@@ -56,7 +56,7 @@ class CaffeVisApp(BaseApp):
             else:
                 #caffe.set_mode_cpu()
                 print('TorchVisApp mode (in main thread):     CPU')
-        self.net = getattr(models, settings.torchvis_network)(settings.torchvis_network_weights).to(self.device)
+        self.net = getattr(models, settings.torchvis_network)(settings.torchvis_network_weights).eval().to(self.device)
         self.net.img_features = {}
         self.net.img_grad = {}
         self.net.reset_grad = self.reset_grad

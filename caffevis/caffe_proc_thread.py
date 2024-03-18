@@ -94,10 +94,11 @@ class CaffeProcThread(CodependentThread):
                     net_preproc_forward(self.settings, self.net, im_small, self.input_dims, self.mode_gpu)
 
             if run_back:
+                print(backprop_layer, backprop_unit)
                 diffs = self.net.img_features[backprop_layer].detach() * 0
                 diffs[0][backprop_unit] = self.net.img_features[backprop_layer].detach()[0, backprop_unit]
-                self.net.reset_grad(self.net.parameters())
-
+                self.net.zero_grad()##reset_grad(self.net.parameters())
+                self.net.data.grad = None
                 assert back_mode in ('grad', 'deconv')
                 if back_mode == 'grad':
                     with WithTimer('CaffeProcThread:backward', quiet = self.debug_level < 1):
